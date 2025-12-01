@@ -114,87 +114,90 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
           ),
         ),
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: StaggeredGrid.count(
-              crossAxisCount: crossAxisCount,
-              mainAxisSpacing: spacing,
-              crossAxisSpacing: spacing,
-              children: List.generate(items.length, (index) {
-                final item = items[index];
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: StaggeredGrid.count(
+                crossAxisCount: crossAxisCount,
+                mainAxisSpacing: spacing,
+                crossAxisSpacing: spacing,
+                children: List.generate(items.length, (index) {
+                  final item = items[index];
 
-                // Each tile is both a DragTarget (to accept drops) and a LongPressDraggable
-                return StaggeredGridTile.count(
-                  crossAxisCellCount: 1,
-                  mainAxisCellCount: item.heightCells,
-                  child: DragTarget<int>(
-                    onWillAcceptWithDetails: (fromIndex) => fromIndex != index,
-                    onAcceptWithDetails: (details) {
-                      final fromIndex = details.data;
-                      _swapItems(fromIndex, index);
-                    },
-                    builder: (context, candidateData, rejectedData) {
-                      // Show highlight if something is hovering here
-                      final hovering = candidateData.isNotEmpty;
+                  // Each tile is both a DragTarget (to accept drops) and a LongPressDraggable
+                  return StaggeredGridTile.count(
+                    crossAxisCellCount: 1,
+                    mainAxisCellCount: item.heightCells,
+                    child: DragTarget<int>(
+                      onWillAcceptWithDetails: (fromIndex) =>
+                          fromIndex != index,
+                      onAcceptWithDetails: (details) {
+                        final fromIndex = details.data;
+                        _swapItems(fromIndex, index);
+                      },
+                      builder: (context, candidateData, rejectedData) {
+                        // Show highlight if something is hovering here
+                        final hovering = candidateData.isNotEmpty;
 
-                      return LongPressDraggable<int>(
-                        data: index,
-                        feedback: Material(
-                          color: Colors.transparent,
-                          elevation: 6,
-                          child: _buildTile(
-                            item,
-                            isFeedback: true,
-                            computedWidth: _computeTileWidth(
-                              context,
-                              item.heightCells,
-                            ),
-                            computedHeight: _computeTileHeight(
-                              item.heightCells,
+                        return LongPressDraggable<int>(
+                          data: index,
+                          feedback: Material(
+                            color: Colors.transparent,
+                            elevation: 6,
+                            child: _buildTile(
+                              item,
+                              isFeedback: true,
+                              computedWidth: _computeTileWidth(
+                                context,
+                                item.heightCells,
+                              ),
+                              computedHeight: _computeTileHeight(
+                                item.heightCells,
+                              ),
                             ),
                           ),
-                        ),
-                        childWhenDragging: Opacity(
-                          opacity: 0.25,
-                          child: _buildTile(item, isDragging: true),
-                        ),
-                        onDragStarted: () {
-                          setState(() {
-                            draggingIndex = index;
-                          });
-                        },
-                        onDraggableCanceled: (_, __) {
-                          setState(() {
-                            draggingIndex = null;
-                          });
-                        },
-                        onDragEnd: (_) {
-                          setState(() {
-                            draggingIndex = null;
-                          });
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: hovering
-                                ? [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.12),
-                                      blurRadius: 8,
-                                      offset: Offset(0, 4),
-                                    ),
-                                  ]
-                                : null,
+                          childWhenDragging: Opacity(
+                            opacity: 0.25,
+                            child: _buildTile(item, isDragging: true),
                           ),
-                          child: _buildTile(item),
-                        ),
-                      );
-                    },
-                  ),
-                );
-              }),
+                          onDragStarted: () {
+                            setState(() {
+                              draggingIndex = index;
+                            });
+                          },
+                          onDraggableCanceled: (_, __) {
+                            setState(() {
+                              draggingIndex = null;
+                            });
+                          },
+                          onDragEnd: (_) {
+                            setState(() {
+                              draggingIndex = null;
+                            });
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: hovering
+                                  ? [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.12),
+                                        blurRadius: 8,
+                                        offset: Offset(0, 4),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: _buildTile(item),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                }),
+              ),
             ),
           ),
         ),
