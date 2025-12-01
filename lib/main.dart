@@ -211,10 +211,10 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
             child: Center(
               child: Container(
                 height: deleteButtonHeight,
-                width: 120,
+
                 decoration: BoxDecoration(
                   color: Colors.redAccent,
-                  borderRadius: BorderRadius.circular(30),
+                  shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black26,
@@ -224,10 +224,7 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
                   ],
                 ),
                 child: const Center(
-                  child: Text(
-                    'Delete',
-                    style: TextStyle(color: Colors.white, fontSize: 18),
-                  ),
+                  child: Icon(Icons.delete, color: Colors.white, size: 28),
                 ),
               ),
             ),
