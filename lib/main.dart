@@ -1,19 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
-/// Dynamic drag & drop staggered grid example
-///
-/// - Long press a tile to drag it
-/// - Drop onto any other tile to swap positions (Option 1: free reorder)
-/// - Tiles animate visually while being dragged (scale/opacity)
-///
-/// Add to your pubspec.yaml:
-///
-/// dependencies:
-///   flutter:
-///     sdk: flutter
-///   flutter_staggered_grid_view: ^0.6.2
-///
 void main() {
   runApp(const MyApp());
 }
@@ -46,7 +33,8 @@ class DynamicDragStaggeredGrid extends StatefulWidget {
       _DynamicDragStaggeredGridState();
 }
 
-class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
+class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid>
+    with SingleTickerProviderStateMixin {
   List<GridItem> items = [
     GridItem('Steps', Colors.red.shade300, 2),
     GridItem('Hydration', Colors.green.shade300, 1),
@@ -58,10 +46,12 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
 
   int? draggingIndex;
   Offset? dragOffset; // track position for overlap detection
+  bool isDeleting = false; // trigger delete button animation
 
   final int crossAxisCount = 2;
   final double spacing = 12;
   final double baseCellHeight = 100;
+  final double deleteButtonSize = 60.0;
 
   void _swapItems(int from, int to) {
     setState(() {
@@ -98,7 +88,6 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
-    final deleteButtonHeight = 60.0;
 
     return Stack(
       children: [
@@ -134,7 +123,6 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
                   crossAxisSpacing: spacing,
                   children: List.generate(items.length, (index) {
                     final item = items[index];
-
                     return StaggeredGridTile.count(
                       crossAxisCellCount: 1,
                       mainAxisCellCount: item.heightCells,
@@ -176,14 +164,19 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
                                 dragOffset = details.globalPosition;
                               });
                             },
-                            onDragEnd: (details) {
+                            onDragEnd: (details) async {
                               final offset = dragOffset;
                               if (offset != null &&
                                   offset.dy >
-                                      screenHeight - deleteButtonHeight - 20) {
-                                // If dropped near bottom delete button
+                                      screenHeight - deleteButtonSize - 20) {
+                                // Trigger delete animation
+                                setState(() => isDeleting = true);
+                                await Future.delayed(
+                                  const Duration(milliseconds: 200),
+                                );
                                 setState(() {
                                   items.removeAt(draggingIndex!);
+                                  isDeleting = false;
                                 });
                               }
                               setState(() {
@@ -191,7 +184,18 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
                                 dragOffset = null;
                               });
                             },
-                            child: _buildTile(item),
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 300),
+                              child: AnimatedContainer(
+                                key: ValueKey(item.title),
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                                child: _buildTile(
+                                  item,
+                                  key: ValueKey(item.title),
+                                ),
+                              ),
+                            ),
                           );
                         },
                       ),
@@ -202,29 +206,34 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
             ),
           ],
         ),
-        // Bottom Center Delete Button
+        // Bottom-center delete button with animation
         if (draggingIndex != null)
           Positioned(
             bottom: 10,
             left: 0,
             right: 0,
             child: Center(
-              child: Container(
-                height: deleteButtonHeight,
-
-                decoration: BoxDecoration(
-                  color: Colors.redAccent,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 8,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Center(
-                  child: Icon(Icons.delete, color: Colors.white, size: 28),
+              child: AnimatedScale(
+                duration: const Duration(milliseconds: 200),
+                scale: isDeleting ? 1.5 : 1.0,
+                curve: Curves.easeInOut,
+                child: Container(
+                  height: deleteButtonSize,
+                  width: deleteButtonSize,
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 8,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.delete, color: Colors.white, size: 28),
+                  ),
                 ),
               ),
             ),
@@ -235,12 +244,14 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
 
   Widget _buildTile(
     GridItem item, {
+    Key? key,
     bool isFeedback = false,
     bool isDragging = false,
     double? computedWidth,
     double? computedHeight,
   }) {
     final tile = Container(
+      key: key,
       width: computedWidth,
       height: computedHeight,
       padding: const EdgeInsets.all(12),
@@ -277,7 +288,7 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [
+              boxShadow: const [
                 BoxShadow(
                   color: Colors.black26,
                   blurRadius: 12,
