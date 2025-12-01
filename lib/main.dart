@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
@@ -206,7 +208,7 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid>
             ),
           ],
         ),
-        // Bottom-center delete button with animation
+        // Bottom-center delete button with hover detection and deletion state
         if (draggingIndex != null)
           Positioned(
             bottom: 10,
@@ -217,23 +219,55 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid>
                 duration: const Duration(milliseconds: 200),
                 scale: isDeleting ? 1.5 : 1.0,
                 curve: Curves.easeInOut,
-                child: Container(
-                  height: deleteButtonSize,
-                  width: deleteButtonSize,
-                  decoration: BoxDecoration(
-                    color: Colors.redAccent,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 8,
-                        offset: Offset(0, 4),
+                child: Builder(
+                  builder: (context) {
+                    final screenWidth = MediaQuery.of(context).size.width;
+                    final deleteButtonRadius = deleteButtonSize / 2;
+                    final deleteButtonCenter = Offset(
+                      screenWidth / 2,
+                      MediaQuery.of(context).size.height -
+                          deleteButtonRadius -
+                          10,
+                    );
+
+                    bool isOverDelete = false;
+                    if (dragOffset != null) {
+                      final dx = dragOffset!.dx - deleteButtonCenter.dx;
+                      final dy = dragOffset!.dy - deleteButtonCenter.dy;
+                      final distance = sqrt(dx * dx + dy * dy);
+                      if (distance <= deleteButtonRadius) {
+                        isOverDelete = true;
+                      }
+                    }
+
+                    // Button is red either when hovering or during deletion animation
+                    final buttonColor = (isOverDelete || isDeleting)
+                        ? Colors.redAccent
+                        : Colors.grey;
+
+                    return Container(
+                      height: deleteButtonSize,
+                      width: deleteButtonSize,
+                      decoration: BoxDecoration(
+                        color: buttonColor,
+                        shape: BoxShape.circle,
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Icon(Icons.delete, color: Colors.white, size: 28),
-                  ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.delete,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
