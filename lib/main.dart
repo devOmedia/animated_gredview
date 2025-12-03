@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
@@ -38,32 +40,32 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
 
   final GlobalKey gridKey = GlobalKey();
 
-  List<GridItem> items = [
-    GridItem('Steps', Colors.redAccent, 2),
-    GridItem('Hydration', Colors.greenAccent, 1),
-    GridItem('Heart Rate', Colors.blueAccent, 1),
-    GridItem('Calories', Colors.orangeAccent, 1),
-    GridItem('Sleep', Colors.tealAccent, 2),
-    GridItem('Protein', Colors.purpleAccent, 1),
-  ];
+  // *** Set grid to 3 columns wide ***
+  final int crossAxisCount = 3;
 
-  int? draggingIndex;
-  Offset? dragOffset;
-  bool isDeleting = false;
-
-  final int crossAxisCount = 2;
   final double spacing = 12;
   final double baseCellHeight = 100;
   final double deleteButtonSize = 60.0;
 
-  // -----------------------------
-  //     SMART CLEAN ADD BUTTON
-  // -----------------------------
-  void showAddCardButton() {
+  List<GridItem> items = [
+    GridItem('Steps', Colors.red.shade300, 2),
+    GridItem('Hydration', Colors.green.shade300, 1),
+    GridItem('Heart Rate', Colors.blue.shade300, 1),
+    GridItem('Calories', Colors.orange.shade300, 1),
+    GridItem('Sleep', Colors.teal.shade300, 2),
+    GridItem('Protein', Colors.purple.shade300, 1),
+  ];
+
+  int? draggingIndex;
+  Offset? dragOffset; // tracking drag for delete area
+  bool isDeleting = false;
+
+  // show add button and auto-hide after duration
+  void showAddCardButton([int seconds = 4]) {
+    if (!mounted) return;
     setState(() => showAddButton = true);
 
-    // Auto-hide after 4 seconds
-    Future.delayed(const Duration(seconds: 4), () {
+    Future.delayed(Duration(seconds: seconds), () {
       if (mounted && showAddButton) {
         setState(() => showAddButton = false);
       }
@@ -73,7 +75,6 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
   void addItem() {
     final newIndex = items.length + 1;
     final isTall = (newIndex % 5 == 0);
-
     items.add(
       GridItem(
         'Item $newIndex',
@@ -81,12 +82,12 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
         isTall ? 2 : 1,
       ),
     );
-
     setState(() {});
   }
 
   void swapItems(int from, int to) {
     setState(() {
+      if (from == to) return;
       final item = items.removeAt(from);
       items.insert(to, item);
     });
@@ -95,11 +96,12 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
   double computeTileHeight(int heightCells) =>
       (baseCellHeight * heightCells) + (spacing * (heightCells - 1));
 
-  double computeTileWidth(BuildContext context, int heightCells) {
+  double computeTileWidth(BuildContext context) {
     final totalPadding = 12 * 2;
-    final crossSpacingTotal = spacing;
-    final width = MediaQuery.of(context).size.width;
-    return (width - totalPadding - crossSpacingTotal) / crossAxisCount;
+    final crossSpacingTotal = spacing * (crossAxisCount - 1);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final available = screenWidth - totalPadding - crossSpacingTotal;
+    return available / crossAxisCount;
   }
 
   @override
@@ -108,37 +110,42 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
 
     return Stack(
       children: [
+        // Main interaction area: double-tap shows add button, tap hides it
         GestureDetector(
           onDoubleTap: () {
-            showAddCardButton();
+            // Show add button on a friendly gesture
+            showAddCardButton(4); // 4 seconds auto-hide
           },
           onTap: () {
             if (showAddButton) setState(() => showAddButton = false);
           },
+          behavior: HitTestBehavior.opaque,
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12.0,
+                  vertical: 8,
+                ),
                 child: Row(
-                  children: const [
-                    Icon(Icons.touch_app),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Double-tap empty area to add a new card',
-                        style: TextStyle(fontSize: 15),
-                      ),
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: addItem,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add card'),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text('Double-tap anywhere to show Add button'),
                     ),
                   ],
                 ),
               ),
 
-              // -----------------------
-              //     GRID VIEW
-              // -----------------------
+              // Grid area
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(12.0),
                   child: StaggeredGrid.count(
                     key: gridKey,
                     crossAxisCount: crossAxisCount,
@@ -146,56 +153,60 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
                     crossAxisSpacing: spacing,
                     children: List.generate(items.length, (index) {
                       final item = items[index];
-
                       return StaggeredGridTile.count(
                         crossAxisCellCount: 1,
                         mainAxisCellCount: item.heightCells,
                         child: DragTarget<int>(
                           onWillAcceptWithDetails: (from) => from != index,
-                          onAcceptWithDetails: (from) =>
-                              swapItems(from.data, index),
-                          builder: (context, _, __) {
+                          onAcceptWithDetails: (from) {
+                            swapItems(from.data, index);
+                          },
+                          builder: (context, candidateData, rejectedData) {
                             return LongPressDraggable<int>(
                               data: index,
                               feedback: Material(
                                 color: Colors.transparent,
+                                elevation: 6,
                                 child: buildTile(
                                   item,
                                   isFeedback: true,
-                                  computedWidth: computeTileWidth(
-                                    context,
-                                    item.heightCells,
-                                  ),
+                                  computedWidth: computeTileWidth(context),
                                   computedHeight: computeTileHeight(
                                     item.heightCells,
                                   ),
                                 ),
                               ),
                               childWhenDragging: Opacity(
-                                opacity: 0.3,
-                                child: buildTile(item),
+                                opacity: 0.25,
+                                child: buildTile(item, isDragging: true),
                               ),
-                              onDragStarted: () =>
-                                  setState(() => draggingIndex = index),
-                              onDragUpdate: (details) => setState(
-                                () => dragOffset = details.globalPosition,
-                              ),
+                              onDragStarted: () {
+                                setState(() {
+                                  draggingIndex = index;
+                                });
+                              },
+                              onDragUpdate: (details) {
+                                setState(() {
+                                  dragOffset = details.globalPosition;
+                                });
+                              },
                               onDragEnd: (details) async {
                                 final offset = dragOffset;
-
                                 if (offset != null &&
                                     offset.dy >
                                         screenHeight - deleteButtonSize - 20) {
+                                  // Dropped over delete area
                                   setState(() => isDeleting = true);
-
                                   await Future.delayed(
                                     const Duration(milliseconds: 200),
                                   );
-
-                                  setState(() {
-                                    items.removeAt(draggingIndex!);
-                                    isDeleting = false;
-                                  });
+                                  if (draggingIndex != null &&
+                                      draggingIndex! < items.length) {
+                                    setState(() {
+                                      items.removeAt(draggingIndex!);
+                                    });
+                                  }
+                                  setState(() => isDeleting = false);
                                 }
 
                                 setState(() {
@@ -203,7 +214,13 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
                                   dragOffset = null;
                                 });
                               },
-                              child: buildTile(item),
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 200),
+                                child: buildTile(
+                                  item,
+                                  key: ValueKey(item.title),
+                                ),
+                              ),
                             );
                           },
                         ),
@@ -216,9 +233,7 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
           ),
         ),
 
-        // ---------------------------------
-        //        DRAG DELETE BUTTON
-        // ---------------------------------
+        // Delete target (visible when dragging)
         if (draggingIndex != null)
           Positioned(
             bottom: 10,
@@ -226,49 +241,81 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
             right: 0,
             child: Center(
               child: AnimatedScale(
-                scale: isDeleting ? 1.5 : 1,
                 duration: const Duration(milliseconds: 180),
-                child: Container(
-                  height: deleteButtonSize,
-                  width: deleteButtonSize,
-                  decoration: BoxDecoration(
-                    color: Colors.redAccent,
-                    shape: BoxShape.circle,
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 8,
-                        offset: Offset(0, 4),
+                scale: isDeleting ? 1.5 : 1.0,
+                curve: Curves.easeInOut,
+                child: Builder(
+                  builder: (context) {
+                    final screenWidth = MediaQuery.of(context).size.width;
+                    final deleteButtonRadius = deleteButtonSize / 2;
+                    final deleteButtonCenter = Offset(
+                      screenWidth / 2,
+                      MediaQuery.of(context).size.height -
+                          deleteButtonRadius -
+                          10,
+                    );
+
+                    bool isOverDelete = false;
+                    if (dragOffset != null) {
+                      final dx = dragOffset!.dx - deleteButtonCenter.dx;
+                      final dy = dragOffset!.dy - deleteButtonCenter.dy;
+                      final distance = sqrt(dx * dx + dy * dy);
+                      if (distance <= deleteButtonRadius) {
+                        isOverDelete = true;
+                      }
+                    }
+
+                    final buttonColor = (isOverDelete || isDeleting)
+                        ? Colors.redAccent
+                        : Colors.grey;
+
+                    return Container(
+                      height: deleteButtonSize,
+                      width: deleteButtonSize,
+                      decoration: BoxDecoration(
+                        color: buttonColor,
+                        shape: BoxShape.circle,
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: const Icon(Icons.delete, color: Colors.white),
+                      child: const Center(
+                        child: Icon(
+                          Icons.delete,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
           ),
 
-        // ---------------------------------
-        //         SMART ADD BUTTON
-        // ---------------------------------
+        // Add Card Button (bottom center) — appears on double-tap
         AnimatedPositioned(
-          duration: const Duration(milliseconds: 250),
+          duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
-          bottom: showAddButton ? 25 : -100,
+          bottom: showAddButton ? 25 : -120,
           left: 0,
           right: 0,
           child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 250),
+            duration: const Duration(milliseconds: 200),
             opacity: showAddButton ? 1 : 0,
             child: Center(
               child: FloatingActionButton.extended(
                 backgroundColor: Colors.blueAccent,
-                label: const Text("Add Card"),
-                icon: const Icon(Icons.add),
                 onPressed: () {
                   addItem();
                   setState(() => showAddButton = false);
                 },
+                icon: const Icon(Icons.add),
+                label: const Text('Add Card'),
               ),
             ),
           ),
@@ -279,17 +326,21 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
 
   Widget buildTile(
     GridItem item, {
+    Key? key,
     bool isFeedback = false,
+    bool isDragging = false,
     double? computedWidth,
     double? computedHeight,
   }) {
     final tile = Container(
+      key: key,
       width: computedWidth,
       height: computedHeight,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: item.color,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.black12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,10 +351,10 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
           ),
           const Spacer(),
           Text(
-            item.heightCells == 2 ? "Tall" : "Short",
+            item.heightCells == 2 ? 'Tall' : 'Short',
             style: const TextStyle(fontSize: 12),
           ),
-          const Align(
+          Align(
             alignment: Alignment.bottomRight,
             child: Icon(Icons.drag_handle),
           ),
@@ -312,13 +363,31 @@ class _DynamicDragStaggeredGridState extends State<DynamicDragStaggeredGrid> {
     );
 
     if (isFeedback) {
-      return Material(
-        elevation: 6,
-        borderRadius: BorderRadius.circular(12),
-        child: tile,
+      return Transform.scale(
+        scale: 1.02,
+        child: Opacity(
+          opacity: 0.98,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 12,
+                  offset: Offset(0, 6),
+                ),
+              ],
+            ),
+            child: tile,
+          ),
+        ),
       );
     }
 
-    return tile;
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 200),
+      scale: isDragging ? 0.98 : 1.0,
+      child: tile,
+    );
   }
 }
