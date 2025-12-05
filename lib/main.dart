@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
+import 'heart_rate_card.dart';
 import 'hydration_card.dart';
 import 'steps_card.dart';
 
@@ -318,6 +319,14 @@ class _MetricsGridPageState extends State<MetricsGridPage> {
         child: HydrationWaveProvider(
           child: HydrationCard(onAddWater: () {}, remainingLiters: 3.5),
         ),
+      );
+    }
+    if (item.title == "Heart Rate") {
+      width *= 1.0;
+      return SizedBox(
+        width: width,
+        height: feedbackHeight ?? 130,
+        child: const HeartRateCard(),
       );
     }
     if (item.heightCells == 2) {
