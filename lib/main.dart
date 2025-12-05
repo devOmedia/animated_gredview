@@ -292,7 +292,7 @@ class _MetricsGridPageState extends State<MetricsGridPage> {
                   color: Colors.black,
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 2),
               const Text(
                 "kcal",
                 style: TextStyle(
@@ -303,8 +303,8 @@ class _MetricsGridPageState extends State<MetricsGridPage> {
               ),
               const Spacer(),
               CircularPercentIndicator(
-                radius: 26,
-                lineWidth: 7,
+                radius: 18,
+                lineWidth: 2,
                 percent: 0.72,
                 progressColor: Color(0xff098C26),
                 backgroundColor: Color(0xffEBFFF0),

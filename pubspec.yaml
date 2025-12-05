@@ -39,6 +39,7 @@ dependencies:
   flutter_slidable: ^4.0.3
   flutter_staggered_animations: ^1.1.1
   percent_indicator: ^4.2.5
+  flutter_wall_layout: ^2.1.2
 dev_dependencies:
   flutter_test:
     sdk: flutter
