@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
+import 'steps_card.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -44,7 +46,7 @@ class _MetricsGridPageState extends State<MetricsGridPage> {
     GridItem("Protein", Colors.teal.shade300, 1),
   ];
 
-  int crossAxisCount = 3;
+  int crossAxisCount = 2;
   double spacing = 12;
   double baseCellHeight = 100;
 
@@ -298,6 +300,14 @@ class _MetricsGridPageState extends State<MetricsGridPage> {
     double? feedbackWidth,
     double? feedbackHeight,
   }) {
+    if (item.title == "Steps") {
+      // Use the new StepsCard widget for the Steps item
+      return SizedBox(
+        width: feedbackWidth,
+        height: feedbackHeight ?? 270,
+        child: const StepsCard(),
+      );
+    }
     final tile = Container(
       width: feedbackWidth,
       height: feedbackHeight,
