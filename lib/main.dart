@@ -21,7 +21,25 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Metrics Dashboard',
       theme: ThemeData.light(),
-      home: const Scaffold(body: SafeArea(child: MetricsGridPage())),
+      home: const DemoMetricsScreen(),
+    );
+  }
+}
+
+// Demo wrapper for preview/testing. Remove or replace in your app.
+class DemoMetricsScreen extends StatelessWidget {
+  const DemoMetricsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Metrics Demo')),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: MetricsGridPage(),
+        ),
+      ),
     );
   }
 }
@@ -35,6 +53,7 @@ class GridItem {
 }
 
 class MetricsGridPage extends StatefulWidget {
+  // You can add parameters here for customization, e.g. items, editMode, etc.
   const MetricsGridPage({super.key});
 
   @override
@@ -107,8 +126,7 @@ class _MetricsGridPageState extends State<MetricsGridPage> {
 
   @override
   Widget build(BuildContext context) {
-    final screenH = MediaQuery.of(context).size.height;
-
+    // Remove Scaffold/SafeArea, make this embeddable in any scrollable screen
     return Stack(
       children: [
         GestureDetector(
@@ -116,7 +134,6 @@ class _MetricsGridPageState extends State<MetricsGridPage> {
           behavior: HitTestBehavior.opaque,
           child: Column(
             children: [
-              // Top bar
               if (isEditMode)
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -163,62 +180,11 @@ class _MetricsGridPageState extends State<MetricsGridPage> {
                     ],
                   ),
                 ),
-
-              // GRID
-              // Expanded(
-              //   child: Padding(
-              //     padding: const EdgeInsets.all(12),
-              //     child: ListView.builder(
-              //       itemCount: (items.length / 2).ceil(),
-              //       itemBuilder: (context, rowIdx) {
-              //         final leftIdx = rowIdx * 2;
-              //         final rightIdx = leftIdx + 1;
-              //         final leftItem = items[leftIdx];
-              //         final rightItem = rightIdx < items.length
-              //             ? items[rightIdx]
-              //             : null;
-              //         // Determine flex: tall = 4, short = 5
-              //         int leftFlex = leftItem.heightCells == 2 ? 4 : 5;
-              //         int rightFlex =
-              //             rightItem != null && rightItem.heightCells == 2
-              //             ? 4
-              //             : 5;
-              //         return Row(
-              //           children: [
-              //             Expanded(
-              //               flex: leftFlex,
-              //               child: Padding(
-              //                 padding: const EdgeInsets.only(
-              //                   right: 6,
-              //                   bottom: 12,
-              //                 ),
-              //                 child: buildDragTile(leftItem, leftIdx, context),
-              //               ),
-              //             ),
-              //             if (rightItem != null)
-              //               Expanded(
-              //                 flex: rightFlex,
-              //                 child: Padding(
-              //                   padding: const EdgeInsets.only(
-              //                     left: 6,
-              //                     bottom: 12,
-              //                   ),
-              //                   child: buildDragTile(
-              //                     rightItem,
-              //                     rightIdx,
-              //                     context,
-              //                   ),
-              //                 ),
-              //               ),
-              //           ],
-              //         );
-              //       },
-              //     ),
-              //   ),
-              // ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
+              // The grid itself
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: SizedBox(
+                  height: 600, // You can make this dynamic or expose as param
                   child: MasonryGridView.count(
                     crossAxisCount: 2,
                     mainAxisSpacing: 12,
@@ -234,8 +200,6 @@ class _MetricsGridPageState extends State<MetricsGridPage> {
             ],
           ),
         ),
-
-        // Delete target
         if (isEditMode && draggingIndex != null)
           Positioned(
             bottom: 10,
@@ -249,18 +213,6 @@ class _MetricsGridPageState extends State<MetricsGridPage> {
               ),
             ),
           ),
-
-        // Add Metric button
-        // if (isEditMode)
-        //   Positioned(
-        //     bottom: 25,
-        //     right: 20,
-        //     child: FloatingActionButton.extended(
-        //       onPressed: addMetric,
-        //       icon: const Icon(Icons.add),
-        //       label: const Text("Add Metric"),
-        //     ),
-        //   ),
       ],
     );
   }
