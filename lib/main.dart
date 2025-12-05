@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
 import 'heart_rate_card.dart';
@@ -164,53 +165,68 @@ class _MetricsGridPageState extends State<MetricsGridPage> {
                 ),
 
               // GRID
+              // Expanded(
+              //   child: Padding(
+              //     padding: const EdgeInsets.all(12),
+              //     child: ListView.builder(
+              //       itemCount: (items.length / 2).ceil(),
+              //       itemBuilder: (context, rowIdx) {
+              //         final leftIdx = rowIdx * 2;
+              //         final rightIdx = leftIdx + 1;
+              //         final leftItem = items[leftIdx];
+              //         final rightItem = rightIdx < items.length
+              //             ? items[rightIdx]
+              //             : null;
+              //         // Determine flex: tall = 4, short = 5
+              //         int leftFlex = leftItem.heightCells == 2 ? 4 : 5;
+              //         int rightFlex =
+              //             rightItem != null && rightItem.heightCells == 2
+              //             ? 4
+              //             : 5;
+              //         return Row(
+              //           children: [
+              //             Expanded(
+              //               flex: leftFlex,
+              //               child: Padding(
+              //                 padding: const EdgeInsets.only(
+              //                   right: 6,
+              //                   bottom: 12,
+              //                 ),
+              //                 child: buildDragTile(leftItem, leftIdx, context),
+              //               ),
+              //             ),
+              //             if (rightItem != null)
+              //               Expanded(
+              //                 flex: rightFlex,
+              //                 child: Padding(
+              //                   padding: const EdgeInsets.only(
+              //                     left: 6,
+              //                     bottom: 12,
+              //                   ),
+              //                   child: buildDragTile(
+              //                     rightItem,
+              //                     rightIdx,
+              //                     context,
+              //                   ),
+              //                 ),
+              //               ),
+              //           ],
+              //         );
+              //       },
+              //     ),
+              //   ),
+              // ),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(12),
-                  child: ListView.builder(
-                    itemCount: (items.length / 2).ceil(),
-                    itemBuilder: (context, rowIdx) {
-                      final leftIdx = rowIdx * 2;
-                      final rightIdx = leftIdx + 1;
-                      final leftItem = items[leftIdx];
-                      final rightItem = rightIdx < items.length
-                          ? items[rightIdx]
-                          : null;
-                      // Determine flex: tall = 4, short = 5
-                      int leftFlex = leftItem.heightCells == 2 ? 4 : 5;
-                      int rightFlex =
-                          rightItem != null && rightItem.heightCells == 2
-                          ? 4
-                          : 5;
-                      return Row(
-                        children: [
-                          Expanded(
-                            flex: leftFlex,
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                right: 6,
-                                bottom: 12,
-                              ),
-                              child: buildDragTile(leftItem, leftIdx, context),
-                            ),
-                          ),
-                          if (rightItem != null)
-                            Expanded(
-                              flex: rightFlex,
-                              child: Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 6,
-                                  bottom: 12,
-                                ),
-                                child: buildDragTile(
-                                  rightItem,
-                                  rightIdx,
-                                  context,
-                                ),
-                              ),
-                            ),
-                        ],
-                      );
+                  child: MasonryGridView.count(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      return buildDragTile(item, index, context);
                     },
                   ),
                 ),
@@ -557,28 +573,28 @@ class _MetricsGridPageState extends State<MetricsGridPage> {
     double? feedbackHeight,
   }) {
     double width = feedbackWidth ?? tileWidth(context);
-    double height = feedbackHeight ?? tileHeight(item.heightCells);
+    // double height = feedbackHeight ?? tileHeight(item.heightCells);
 
     // Adjust width/height for small/tall cards
     if (item.heightCells == 1) {
       width *= 1.5; // Increase width for small cards
-      height *= 0.95; // Slightly reduce height for small cards
+      // height *= 0.95;
     } else if (item.heightCells == 2) {
       width *= 0.85; // Slightly reduce width for tall cards
-      height *= 0.75; // Reduce height for tall cards
+      // height *= 0.75;
     }
 
     if (item.title == "Steps") {
       return SizedBox(
         width: width,
-        height: item.heightCells == 2 ? height : 270,
+        // height: item.heightCells == 2 ? height : 270,
         child: const StepsCard(),
       );
     }
     if (item.title == "Hydration") {
       return SizedBox(
         width: width,
-        height: item.heightCells == 1 ? height : 130,
+        // height: item.heightCells == 1 ? height : 130,
         child: HydrationWaveProvider(
           child: HydrationCard(onAddWater: () {}, remainingLiters: 3.5),
         ),
@@ -587,18 +603,18 @@ class _MetricsGridPageState extends State<MetricsGridPage> {
     if (item.title == "Heart Rate") {
       return SizedBox(
         width: width,
-        height: item.heightCells == 1 ? height : 130,
+        // height: item.heightCells == 1 ? height : 130,
         child: const HeartRateCard(),
       );
     }
     if (item.title == "Calories") {
-      return SizedBox(width: width, height: height, child: _caloriesCard());
+      return SizedBox(width: width, child: _caloriesCard());
     }
     if (item.title == "Protein") {
-      return SizedBox(width: width, height: height, child: _proteinCard());
+      return SizedBox(width: width, child: _proteinCard());
     }
     if (item.title == "Sleep") {
-      return SizedBox(width: width, height: height, child: _sleepCard());
+      return SizedBox(width: width, child: _sleepCard());
     }
     final tile = Container(
       width: width,
