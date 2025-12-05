@@ -2,7 +2,6 @@ import 'dart:math' as math;
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
 import 'heart_rate_card.dart';
@@ -30,7 +29,8 @@ class GridItem {
   final String title;
   final Color color;
   final int heightCells;
-  GridItem(this.title, this.color, this.heightCells);
+  final int widthCells; // new: how many columns to span
+  GridItem(this.title, this.color, this.heightCells, [this.widthCells = 1]);
 }
 
 class MetricsGridPage extends StatefulWidget {
@@ -42,12 +42,12 @@ class MetricsGridPage extends StatefulWidget {
 
 class _MetricsGridPageState extends State<MetricsGridPage> {
   List<GridItem> items = [
-    GridItem("Steps", Colors.red.shade300, 2),
-    GridItem("Hydration", Colors.blue.shade300, 1),
-    GridItem("Heart Rate", Colors.green.shade300, 1),
-    GridItem("Calories", Colors.orange.shade300, 1),
-    GridItem("Sleep", Colors.purple.shade300, 2),
-    GridItem("Protein", Colors.teal.shade300, 1),
+    GridItem("Steps", Colors.red.shade300, 2, 1), // spans 2 columns
+    GridItem("Hydration", Colors.blue.shade300, 1, 1),
+    GridItem("Heart Rate", Colors.green.shade300, 1, 1),
+    GridItem("Calories", Colors.orange.shade300, 1, 1), // spans 2 columns
+    GridItem("Sleep", Colors.purple.shade300, 2, 1),
+    GridItem("Protein", Colors.teal.shade300, 1, 1),
   ];
 
   int crossAxisCount = 2;
@@ -167,18 +167,51 @@ class _MetricsGridPageState extends State<MetricsGridPage> {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(12),
-                  child: StaggeredGrid.count(
-                    crossAxisCount: crossAxisCount,
-                    mainAxisSpacing: spacing,
-                    crossAxisSpacing: spacing,
-                    children: List.generate(items.length, (index) {
-                      final item = items[index];
-                      return StaggeredGridTile.count(
-                        crossAxisCellCount: 1,
-                        mainAxisCellCount: item.heightCells,
-                        child: buildDragTile(item, index, context),
+                  child: ListView.builder(
+                    itemCount: (items.length / 2).ceil(),
+                    itemBuilder: (context, rowIdx) {
+                      final leftIdx = rowIdx * 2;
+                      final rightIdx = leftIdx + 1;
+                      final leftItem = items[leftIdx];
+                      final rightItem = rightIdx < items.length
+                          ? items[rightIdx]
+                          : null;
+                      // Determine flex: tall = 4, short = 5
+                      int leftFlex = leftItem.heightCells == 2 ? 4 : 5;
+                      int rightFlex =
+                          rightItem != null && rightItem.heightCells == 2
+                          ? 4
+                          : 5;
+                      return Row(
+                        children: [
+                          Expanded(
+                            flex: leftFlex,
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                right: 6,
+                                bottom: 12,
+                              ),
+                              child: buildDragTile(leftItem, leftIdx, context),
+                            ),
+                          ),
+                          if (rightItem != null)
+                            Expanded(
+                              flex: rightFlex,
+                              child: Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 6,
+                                  bottom: 12,
+                                ),
+                                child: buildDragTile(
+                                  rightItem,
+                                  rightIdx,
+                                  context,
+                                ),
+                              ),
+                            ),
+                        ],
                       );
-                    }),
+                    },
                   ),
                 ),
               ),
@@ -524,58 +557,48 @@ class _MetricsGridPageState extends State<MetricsGridPage> {
     double? feedbackHeight,
   }) {
     double width = feedbackWidth ?? tileWidth(context);
+    double height = feedbackHeight ?? tileHeight(item.heightCells);
+
+    // Adjust width/height for small/tall cards
+    if (item.heightCells == 1) {
+      width *= 1.5; // Increase width for small cards
+      height *= 0.95; // Slightly reduce height for small cards
+    } else if (item.heightCells == 2) {
+      width *= 0.85; // Slightly reduce width for tall cards
+      height *= 0.75; // Reduce height for tall cards
+    }
+
     if (item.title == "Steps") {
-      width *= 0.8;
       return SizedBox(
         width: width,
-        height: feedbackHeight ?? 270,
+        height: item.heightCells == 2 ? height : 270,
         child: const StepsCard(),
       );
     }
     if (item.title == "Hydration") {
-      width *= 1.1;
       return SizedBox(
         width: width,
-        height: feedbackHeight ?? 130,
+        height: item.heightCells == 1 ? height : 130,
         child: HydrationWaveProvider(
           child: HydrationCard(onAddWater: () {}, remainingLiters: 3.5),
         ),
       );
     }
     if (item.title == "Heart Rate") {
-      width *= 1.0;
       return SizedBox(
         width: width,
-        height: feedbackHeight ?? 130,
+        height: item.heightCells == 1 ? height : 130,
         child: const HeartRateCard(),
       );
     }
-
     if (item.title == "Calories") {
-      return SizedBox(
-        width: width,
-        height: feedbackHeight ?? tileHeight(item.heightCells),
-        child: _caloriesCard(),
-      );
+      return SizedBox(width: width, height: height, child: _caloriesCard());
     }
     if (item.title == "Protein") {
-      return SizedBox(
-        width: width,
-        height: feedbackHeight ?? tileHeight(item.heightCells),
-        child: _proteinCard(),
-      );
+      return SizedBox(width: width, height: height, child: _proteinCard());
     }
     if (item.title == "Sleep") {
-      return SizedBox(
-        width: width,
-        height: feedbackHeight ?? tileHeight(item.heightCells),
-        child: _sleepCard(),
-      );
-    }
-    if (item.heightCells == 2) {
-      width *= 0.8;
-    } else if (item.heightCells == 1) {
-      width *= 1.2;
+      return SizedBox(width: width, height: height, child: _sleepCard());
     }
     final tile = Container(
       width: width,
