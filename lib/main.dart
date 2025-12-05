@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
+import 'hydration_card.dart';
 import 'steps_card.dart';
 
 void main() {
@@ -300,16 +301,32 @@ class _MetricsGridPageState extends State<MetricsGridPage> {
     double? feedbackWidth,
     double? feedbackHeight,
   }) {
+    double width = feedbackWidth ?? tileWidth(context);
     if (item.title == "Steps") {
-      // Use the new StepsCard widget for the Steps item
+      width *= 0.9;
       return SizedBox(
-        width: feedbackWidth,
+        width: width,
         height: feedbackHeight ?? 270,
         child: const StepsCard(),
       );
     }
+    if (item.title == "Hydration") {
+      width *= 1.1;
+      return SizedBox(
+        width: width,
+        height: feedbackHeight ?? 130,
+        child: HydrationWaveProvider(
+          child: HydrationCard(onAddWater: () {}, remainingLiters: 3.5),
+        ),
+      );
+    }
+    if (item.heightCells == 2) {
+      width *= 0.9;
+    } else if (item.heightCells == 1) {
+      width *= 1.1;
+    }
     final tile = Container(
-      width: feedbackWidth,
+      width: width,
       height: feedbackHeight,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
